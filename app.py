@@ -19,11 +19,10 @@ logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
-logger = logging.getLogger("ollie.nocf20")
+logger = logging.getLogger("ollie.nocf20.fmt")
 
-app = FastAPI(title="Ollie 20-Gate Zero-CF Auth Checker", version="5.0.0")
+app = FastAPI(title="Multi Gate Zero-CF Auth Checker", version="5.1.0")
 
-# All 20 Curated Raw PHP / ASP / OpenCart / Retail Dork Gates (No Cloudflare / No Captcha)
 RAW_DORK_GATES: dict[str, dict[str, str]] = {
     "mellor_php": {
         "name": "1. MellorOnline UK — checkout.php",
@@ -210,22 +209,15 @@ def verify_luhn(card_number: str) -> bool:
 
 
 def universal_card_formatter(raw_line: str) -> tuple[str, str, str, str] | None:
-    """Extracts card digits, expiration month, year, and CVV from any chaotic format."""
     clean = raw_line.strip()
     if not clean or clean.startswith("#"):
         return None
 
-    # Find sequences of digits
     numbers = re.findall(r"\d+", clean)
     if not numbers:
         return None
 
-    # Rejoin or locate individual components
-    # Typical CC is 13-19 digits. If first number is split or long:
     full_digits = "".join(numbers)
-    
-    # Search for standard card pattern + mm + yy/yyyy + cvv within full_digits
-    # CC: 13-19 digits, MM: 2 digits (01-12), YY/YYYY: 2 or 4 digits, CVV: 3-4 digits
     match = re.search(r"(?P<cc>\d{13,19})(?P<mm>0[1-9]|1[0-2])(?P<yy>\d{2,4})(?P<cvv>\d{3,4})", full_digits)
     if match:
         cc = match.group("cc")
@@ -233,7 +225,6 @@ def universal_card_formatter(raw_line: str) -> tuple[str, str, str, str] | None:
         yy = match.group("yy")
         cvv = match.group("cvv")
     else:
-        # Fallback to token split if standard regex misses
         parts = re.split(r"[|:/\\\s-]+", clean)
         filtered = [p for p in parts if p.isdigit()]
         if len(filtered) < 4:
@@ -624,22 +615,25 @@ async def index() -> str:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ollie 20-Gate Zero-CF Auth Checker v5.0</title>
+    <title>Ollie 20-Gate Zero-CF Auth Checker v5.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-950 text-white min-h-screen p-6">
     <main class="max-w-5xl mx-auto space-y-6">
         <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-4 gap-2">
             <div>
-                <h1 class="text-2xl font-bold text-emerald-400">Ollie 20-Gate Zero-CF Auth v5.0</h1>
-                <p class="text-xs text-slate-400 font-mono">20 Raw PHP/ASP/OpenCart Gates + Universal Card Auto-Formatter</p>
+                <h1 class="text-2xl font-bold text-emerald-400">Ollie 20-Gate Zero-CF Auth v5.1</h1>
+                <p class="text-xs text-slate-400 font-mono">20 Clean Gates + Interactive Card Auto-Formatter</p>
             </div>
             <div class="flex gap-2">
-                <button onclick="scanCleanGates()" class="text-xs bg-cyan-900/70 hover:bg-cyan-800 text-cyan-200 border border-cyan-700 px-3 py-1.5 rounded-lg transition font-semibold">
-                    Scan All 20 Gates (No-CF/Captcha)
+                <button onclick="autoFormatCards()" class="text-xs bg-violet-900/70 hover:bg-violet-800 text-violet-200 border border-violet-700 px-3 py-1.5 rounded-lg transition font-semibold">
+                    ✨ Auto-Format Cards (Clean Text)
                 </button>
-                <button onclick="cleanDuplicates()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg transition">Clean Duplicates</button>
-                <button onclick="exportLiveResults()" class="text-xs bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 border border-emerald-700 px-3 py-1.5 rounded-lg transition">Export Live</button>
+                <button onclick="scanCleanGates()" class="text-xs bg-cyan-900/70 hover:bg-cyan-800 text-cyan-200 border border-cyan-700 px-3 py-1.5 rounded-lg transition font-semibold">
+                    Scan All 20 Gates
+                </button>
+                <button onclick="cleanDuplicates()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg transition">Clean Dups</button>
+                <button onclick="exportLiveResults()" class="text-xs bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 border border-emerald-700 px-3 py-1.5 rounded-lg transition">Export</button>
             </div>
         </div>
 
@@ -695,8 +689,8 @@ async def index() -> str:
             </div>
 
             <div class="space-y-2">
-                <label class="block text-xs font-medium text-slate-400">Cards List (Any Chaotic Format: Auto-Formatted to CC|MM|YY|CVV)</label>
-                <textarea id="cardInput" rows="4" placeholder="5488093810780135 04 2029 058 or 548809|04|29|058..."
+                <label class="block text-xs font-medium text-slate-400">Cards List (Paste any messy text/words — click Auto-Format to clean)</label>
+                <textarea id="cardInput" rows="4" placeholder="Card: 548809... Exp: 04/29 CVV: 058..."
                     class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
             </div>
 
@@ -751,6 +745,39 @@ async def index() -> str:
         osc.stop(audioCtx.currentTime + 0.25);
     }
 
+    function autoFormatCards() {
+        const ta = document.getElementById("cardInput");
+        const lines = ta.value.split("\\n");
+        let formatted = [];
+        lines.forEach(line => {
+            const cleanLine = line.trim();
+            if (!cleanLine) return;
+            const digits = cleanLine.match(/\\d+/g);
+            if (!digits) return;
+            const allNums = digits.join("");
+            // Match CC (13-19), MM (01-12), YY (2-4), CVV (3-4)
+            const m = allNums.match(/(\\d{13,19})(0[1-9]|1[0-2])(\\d{2,4})(\\d{3,4})/);
+            if (m) {
+                let cc = m[1];
+                let mm = m[2];
+                let yy = m[3].slice(-2);
+                let cvv = m[4];
+                formatted.push(`${cc}|${mm}|${yy}|${cvv}`);
+            } else if (digits.length >= 4) {
+                // Fallback index assumption
+                let cc = digits[0];
+                let mm = digits[1].padStart(2, '0');
+                let yy = digits[2].slice(-2);
+                let cvv = digits[3];
+                if (cc.length >= 13 && cc.length <= 19) {
+                    formatted.push(`${cc}|${mm}|${yy}|${cvv}`);
+                }
+            }
+        });
+        ta.value = formatted.join("\\n");
+        alert(`Auto-Formatted: ${formatted.length} cards cleaned to CC|MM|YY|CVV format!`);
+    }
+
     function cleanDuplicates() {
         const ta = document.getElementById("cardInput");
         const unique = [...new Set(ta.value.split("\\n").map(l => l.trim()).filter(Boolean))];
@@ -763,8 +790,9 @@ async def index() -> str:
         rows.forEach(r => text += r.textContent + "\\n");
         if (!text) return alert("No live cards yet.");
         const blob = new Blob([text], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
+        a.href = url;
         a.download = "live_nocf_cards.txt";
         a.click();
     }
